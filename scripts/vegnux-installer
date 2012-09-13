@@ -1,6 +1,6 @@
 #! /bin/sh
 #=========================================================#
-# /opt/vegnux-installer/vegnux-installer
+# /vegnux-installer
 # Instalador para Vegnux NeonatoX OS
 # Proyecto Venezolano VegnuX <http://www.vegnux.org.ve>
 # Por:
@@ -252,8 +252,8 @@ function post_install()
 	export LFS=/mnt/${no_grub_hdd}
 	
 #disable automatic login (neonatox livecd user)
-sed -i "s|AutomaticLogin=neonatox||g" ${LFS}/usr/etc/gdm/custom.conf #new
-sed -i "s|AutomaticLoginEnable=true||g" ${LFS}/usr/etc/gdm/custom.conf #new
+#sed -i "s|AutomaticLogin=neonatox||g" ${LFS}/usr/etc/gdm/custom.conf #deprecated
+#sed -i "s|AutomaticLoginEnable=true||g" ${LFS}/usr/etc/gdm/custom.conf #deprecated
 
 #------------------Borrar enlaces del instalador-----------#
 rm -f ${LFS}/usr/share/applications/install.desktop
@@ -598,15 +598,14 @@ if [[ "${UID}" != "0" ]]; then
 fi
 
 #Carga archivo de configuracion.
-prefix="/opt"
-vegnux_installer_conf="${prefix}/vegnux-installer/vegnux-installer.conf"
+vegnux_installer_conf="./vegnux-installer.conf"
 if [[ -e "${vegnux_installer_conf}" ]]; then
 	source "${vegnux_installer_conf}" 2> /dev/null
 else
 	ok_fail " * No existe ${vegnux_installer_conf} *"
 fi
 
-vegnux_installer_functions="${prefix}/vegnux-installer/vegnux-installer.functions"
+vegnux_installer_functions="./vegnux-installer.functions"
 if [[ -e "${vegnux_installer_functions}" ]]; then
 	source "${vegnux_installer_functions}" 2> /dev/null
 else
@@ -691,7 +690,7 @@ asistente_instalacion
 clean			
 ;;
 -g)		#Inicia un asistente de instalacion en modo grafico.
-sh /opt/vegnux-installer/vegnux-installer-fe
+sh ./vegnux-installer-fe
 clean			
 ;;
 --informacion-personal)

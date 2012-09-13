@@ -51,7 +51,7 @@ all : create-dirs
 
 install : all
 	
-uninstall
+uninstall:
 	rm -rf ${DESTDIR}/share/doc/${PACKAGE_NAME}
 	rm -rf ${LIBDIR}/${PACKAGE_NAME}
 	rm -rf /usr/share/applications/vegnux-installer.desktop
@@ -59,7 +59,7 @@ uninstall
 	rm -rf /usr/bin/vegnux-installer
 
 .PHONY:
-	create-dirs all install
+	create-dirs all install uninstall
 
 EOT
 
