@@ -1,0 +1,68 @@
+#! /bin/sh
+#=========================================================#
+# Ejecutar ./configure
+# Instalador para Vegnux NeonatoX OS
+# Proyecto Venezolano VegnuX <http://www.vegnux.org.ve>
+# Por:
+# Carlos Sánchez <mkl.vegnux@gmail.com>
+# Nehemias Velasquez <nehe009@gmail.com>
+# 2007 - 2012
+# GPLv3
+# This program comes with ABSOLUTELY NO WARRANTY.
+#=========================================================#
+# Identity of this package.
+PACKAGE_NAME='vegnux-installer'
+PACKAGE_TARNAME='vegnux-installer'
+PACKAGE_VERSION='0.6.1'
+PACKAGE_STRING='vegnux-installer-0.6.1'
+PACKAGE_BUGREPORT='nehe009@gmail.com'
+
+default_prefix="/usr"
+default_libdir="${default_prefix}/lib"
+
+echo $PACKAGE_STRING
+echo "Directorios de instalacion por defecto:"
+echo ${default_prefix}
+echo ${default_libdir}
+
+DESTDIR=${default_prefix}
+LIBDIR=${default_libdir}
+SHELL=/bin/bash
+MODE=754
+DIRMODE=755
+CONFMODE=644
+
+cat << EOT > Makefile
+
+create-dirs:
+	install -d -m ${DIRMODE} ${LIBDIR}/${PACKAGE_NAME}
+	install -d -m ${DIRMODE} ${DESTDIR}/share/doc/${PACKAGE_NAME}
+	
+all : create-dirs
+	install -m ${MODE} scripts/* ${LIBDIR}/${PACKAGE_NAME}
+	install -m ${MODE} data/* ${LIBDIR}/${PACKAGE_NAME}
+	install -m ${MODE} AUTHORS ${DESTDIR}/share/doc/${PACKAGE_NAME}
+	install -m ${MODE} COPYING ${DESTDIR}/share/doc/${PACKAGE_NAME}
+	install -m ${MODE} NEWS ${DESTDIR}/share/doc/${PACKAGE_NAME}
+	install -m ${MODE} THANKS ${DESTDIR}/share/doc/${PACKAGE_NAME}
+	ln -sf ${LIBDIR}/${PACKAGE_NAME}/install.desktop /usr/share/applications/vegnux-installer.desktop
+	ln -sf ${LIBDIR}/${PACKAGE_NAME}/vegnux.png /usr/share/pixmaps/vegnux-installer.png
+	ln -sf ${LIBDIR}/${PACKAGE_NAME}/vegnux-installer /usr/bin/vegnux-installer
+
+install : all
+	
+uninstall
+	rm -rf ${DESTDIR}/share/doc/${PACKAGE_NAME}
+	rm -rf ${LIBDIR}/${PACKAGE_NAME}
+	rm -rf /usr/share/applications/vegnux-installer.desktop
+	rm -rf /usr/share/pixmaps/vegnux-installer.png
+	rm -rf /usr/bin/vegnux-installer
+
+.PHONY:
+	create-dirs all install
+
+EOT
+
+echo "Makefile generado correctamente, Para instalar escriba 'make install'"
+
+

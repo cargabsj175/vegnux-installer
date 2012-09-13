@@ -1,0 +1,718 @@
+#! /bin/sh
+#=========================================================#
+# /opt/vegnux-installer/vegnux-installer
+# Instalador para Vegnux NeonatoX OS
+# Proyecto Venezolano VegnuX <http://www.vegnux.org.ve>
+# Por:
+# Carlos Sánchez <mkl.vegnux@gmail.com>
+# Nehemias Velasquez <nehe009@gmail.com>
+# 2007 - 2009
+# GPLv3
+# This program comes with ABSOLUTELY NO WARRANTY.
+#=========================================================#
+#-----------------Funciones del Programa------------------#
+#=========================================================#
+
+#vegnux-installer multilanguage (gettext).
+function echog() 
+{
+	if [[ "${VEGNUX_INSTALLER_GETTEXT}" = "yes" ]]; then
+		gettext -es "${*}"
+	else
+		echo -e "${*}"
+	fi
+	# Success.
+	return 0
+}
+
+#Revisa si hay un error en la salida estandar.
+function ok_fail()
+{
+	if [[ "${?}" != "0" ]]; then
+		echo "$red${1}$normal"
+		exit 1
+	fi
+}
+
+#Convierte las particiones en formato de GRUB2.
+function convert_to_grub () 
+{
+# Comprueba que no se haya introducido una opcion mayor de 5 caracteres.
+      no_grub_hdd_chars=$(echo "${no_grub_hdd}" | wc -m)
+      if (("${no_grub_hdd_chars}" > "5")); then
+      echo "${no_grub_hdd} $red no es una opcion valida." $normal
+      # Sale con error.
+      exit 1
+      fi
+      no_grub_hdd_exist=$(grep "${no_grub_hdd}" "/proc/partitions")
+      if [ -z "${no_grub_hdd_exist}" ]; then
+	      echo "${no_grub_hdd} $red no existe en su sistema!!"$normal
+      # Sale con error.
+      exit 1
+      else
+	      echo "Ha seleccionado el siguiente disco duro:"
+	      echo "${no_grub_hdd_exist}"
+      fi
+      echo "Trasformando ${no_grub_hdd} a formato grub..."
+      # Quitando la parte "hd" del principio.
+      old_no_grub_hdd=${no_grub_hdd}
+      # Convierte todo en minusculas...
+      no_grub_hdd=$(echo "${no_grub_hdd}" | awk '{print tolower ($0)}')
+      no_grub_hdd=$(echo ${no_grub_hdd} | sed -e 's@hd@@g')
+      # Añadido soporte discos SATA (sda1)
+      no_grub_hdd=$(echo ${no_grub_hdd} | sed -e 's@sd@@g')
+      # Separando la letra del numero
+      no_grub_hdd_num=$(echo ${no_grub_hdd} | sed -e 's@[a-z A-Z]@@g')
+      no_grub_hdd_alpha=$(echo ${no_grub_hdd} | sed -e 's@[0-9]@@g')
+      # Una vez obtenido el numero y la letra por separado, pasamos a convertirla a formato grub, por ejemplo a --> 0 o 1 --> 1
+      # Convierte la letra a numero grub
+      NO_GRUB_ALPHA="a b c d e f g h i j k l m n o p q r s t u v w x y z"
+      # Ponemos un contador a cero.
+      NO_GRUB_ALPHA_COUNTER="0"
+      for alpha in ${NO_GRUB_ALPHA}
+      do
+	      if [ "${no_grub_hdd_alpha}" = ${alpha} ]; then
+		      grub_hdd_alpha="${NO_GRUB_ALPHA_COUNTER}"
+		      break
+	      else
+		      NO_GRUB_ALPHA_COUNTER=$(expr "${NO_GRUB_ALPHA_COUNTER}")
+	      fi
+      done
+      # Comprueba si se hallo el disco en formato grub.
+      if [ -z "${grub_hdd_alpha}" ]; then
+	      echo "No se consiguio pasar ${old_no_grub_hdd} a formato GRUB. Es posible que no halla introducido un nombre de disco duro valido."
+	      exit 1
+      fi
+      # Convierte el numero a numero grub.
+      if [ ! -z "${no_grub_hdd_num}" ]; then
+	      grub_hdd_num=$(expr "${no_grub_hdd_num}") # modificacion para grub2  (- "1")
+      fi
+      # Recoge los datos en una variable
+      grub_hdd="hd${grub_hdd_alpha}"
+      if [ ! -z "${grub_hdd_num}" ]; then
+	      grub_hdd="${grub_hdd},${grub_hdd_num}"
+      fi
+      # Muestra el resultado!!!
+      echo "Su disco ${old_no_grub_hdd} en formato GRUB2 es (${grub_hdd})"
+
+ok_fail "Error convirtiendo particion a formato de GRUB2"
+}
+
+#Menu de ayuda avanzada
+function vegnux_ayuda_avanzada()
+{
+cat << EOF 
+$red$programa $version para Linux $OS
+$green 
+Uso:  vegnux-installer [COMANDO] [OPCION1] [OPCION2] [OPCION3] [OPCION4]
+$normal	
+Opciones Avanzadas:
+ --format-part-ext3  ---->  Da formato ext3 de linux a la particion indicada.
+   Ejemplo de uso: --format-part-ext3 [particion_a_formatear]
+  
+ --format-part-ext4  ---->  Da formato ext4 de linux a la particion indicada.
+   Ejemplo de uso: --format-part-ext4 [particion_a_formatear]
+
+ --install-linux  ---->  Instala linux en la particion indicada.
+   Ejemplo de uso: --install-linux [particion_para_instalacion]
+ 
+ --create-new-grub  ---->  Instala GRUB2 en la particion indicada.
+   Ejemplo de uso: --create-new-grub [particion]
+
+ --edit-grub  ---->  Añade instalacion a GRUB existente.
+   Ejemplo de uso: --edit-grub [particion_a_añadir] [particion_con_grub2]
+ 
+ --windows-grub  ---->  Añade una particion con Microsoft Windows a GRUB2.
+   Ejemplo de uso: --windows-grub [particion_a_añadir] [particion_con_grub2]
+ 
+ --create-fstab  ---->  Crea el archivo /etc/fstab para la nueva instalacion.
+   Ejemplo de uso: --create-fstab [particion_para_instalacion]
+   
+ --new-part   ---->  Da opcion para iniciar programas de particion.
+
+ --post-install  ---->  Realiza operaciones de post instalacion.
+   Ejemplo de uso: --post-install [particion_para_instalacion]
+
+$green 	
+Proyecto Venezolano VegnuX <http://www.vegnux.org.ve> 
+Por:
+Carlos Sanchez <mkl.vegnux@gmail.com>, Nehemias Velasquez <nehe009@gmail.com>
+2007 - 2010
+GPLv3 $red 
+This program comes with ABSOLUTELY NO WARRANTY.
+
+EOF
+
+ok_fail "Error mostrando ayuda avanzada"
+}
+
+#Menu de ayuda basica
+function vegnux_ayuda_basica()
+{
+cat << EOF 
+$red$programa $version para Linux $OS
+$green 
+Uso:  vegnux-installer [COMANDO] [OPCION1] [OPCION2] [OPCION3] [OPCION4]
+$normal	
+Opciones Basicas:
+ --add-new-user  ---->  Crear nuevo usuario con opciones por defecto.
+   Ejemplo de uso: --add-new-user [nombre_usuario] [contraseña]
+  	
+ --pass-root  ---->  Cambiar contraseña de ROOT
+   Ejemplo de uso: --pass-root [nueva_contraseña]
+ 
+ --find-part  ---->  Muestra las particiones del sistema.
+
+ --set-hostname   ---->  Modifica el HOSTNAME del Sistema.
+   Ejemplo de uso: --set-hostname [nuevo_hostname]
+
+ --info-personal   ---->  Añade informacion personal a un usuario.
+   Ejemplo de uso: --info-personal [nombre_usuario] [nombre_y_apellido] [Tlf]
+
+ --assistant-install  ---->  Inicia asistente de instalacion en modo texto.
+ 
+  -g ---->  Inicia asistente de instalacion en modo grafico.
+ 
+ --update-grub   ---->  Actualiza automaticamente /boot/grub/grub.cfg
+   
+$green 	
+Proyecto Venezolano VegnuX <http://www.vegnux.org.ve> 
+Por:
+Carlos Sanchez <mkl.vegnux@gmail.com>, Nehemias Velasquez <nehe009@gmail.com>
+2007 - 2010
+GPLv3 $red 
+This program comes with ABSOLUTELY NO WARRANTY.
+
+EOF
+
+ok_fail "Error mostrando ayuda basica"
+}
+
+#inicio de instalacion de la liveCD.
+function install_linux() 
+{
+	if [ "$1" = "" ]; then
+	echo ""
+	echo "Escriba el nombre de una particion."
+	echo ""
+	exit 1
+	fi
+	
+	no_grub_hdd="$1"
+	export LFS=/mnt/${no_grub_hdd}
+	umount /mnt/${no_grub_hdd}
+	mkdir -p ${LFS}
+	mount -t ext3 /dev/${no_grub_hdd} ${LFS}
+	mkdir -p ${LFS}/{tmp,boot,mnt,dev,sys,proc,srv,media}
+	chmod 777 ${LFS}/tmp
+	mkdir -p ${LFS}/media/{floppy,cdrom}
+	mkdir -p ${LFS}/{bin,etc,home,lib,root,sbin,usr,var}
+	mnts=$(dir /mnt)
+	
+		for mntpnt in ${mnts}
+			do
+			mkdir ${LFS}/media/${mntpnt}
+		done
+		
+	rm -r ${LFS}/media/{live,$no_grub_hdd}
+
+	cp --preserve=all -R /{bin,etc,home,lib,root,opt,sbin,usr,var} ${LFS} #copia archivos
+
+	cp /boot/vmlinuz ${LFS}/boot/vmlinuz-$(uname -r) 
+	cp /boot/neonatox.png ${LFS}/boot/neonatox.png
+	#cp /boot/config* ${LFS}/boot
+	echo ${OS} >> ${LFS}/etc/${OSN}-release
+
+ok_fail "Error copiando archivos de instalacion"	
+}
+
+#crear nodos de dispositivos y crea archivo /etc/fstab
+function crear_fstab()  {
+	no_grub_hdd="$1"
+	export LFS=/mnt/${no_grub_hdd}
+	mknod -m 600 ${LFS}/dev/console c 5 1
+	mknod -m 666 ${LFS}/dev/null c 1 3
+	mount --bind /dev ${LFS}/dev
+	mount -vt devpts devpts ${LFS}/dev/pts
+	mount -vt tmpfs shm ${LFS}/dev/shm
+	mount -vt proc proc ${LFS}/proc
+	mount -vt sysfs sysfs ${LFS}/sys
+	fsline=$(cat ${LFS}/etc/fstab | grep ${no_grub_hdd})
+	sed -i "s@${fsline}@@g" ${LFS}/etc/fstab 
+	sed -i "s@mnt@media@g" ${LFS}/etc/fstab 
+	echo "/dev/${no_grub_hdd} / ext3 defaults 0 0" >> ${LFS}/etc/fstab 
+
+ok_fail "Error creando archivo /etc/fstab"
+}
+
+#Operaciones luego de la instalacion
+function post_install() 
+{
+	no_grub_hdd="$1"
+	export LFS=/mnt/${no_grub_hdd}
+	
+#disable automatic login (neonatox livecd user)
+sed -i "s|AutomaticLogin=neonatox||g" ${LFS}/usr/etc/gdm/custom.conf #new
+sed -i "s|AutomaticLoginEnable=true||g" ${LFS}/usr/etc/gdm/custom.conf #new
+
+#------------------Borrar enlaces del instalador-----------#
+rm -f ${LFS}/usr/share/applications/install.desktop
+rm -f ${LFS}/root/Desktop/install.desktop
+#----------------------------------------------------------#
+
+ok_fail "Error  ejecutando operaciones de Post Instalacion"
+}
+
+#crear nuevo grub en la particion indicada.
+function crear_nuevo_grub() 
+{
+	no_grub_hdd="$1"
+	export LFS=/mnt/${no_grub_hdd}
+	export d1=${no_grub_hdd}
+	d2=$(echo $d1 | sed 's/[1-9]//g')
+	grub-install --root-directory=${LFS} /dev/${d2}	
+	convert_to_grub
+	touch ${LFS}/boot/grub/grub.cfg
+	GRUB_CONF="${LFS}/boot/grub/grub.cfg"
+cat << EOT > ${GRUB_CONF}
+# Config file for GRUB2 - The GNU GRand Unified Bootloader
+# /boot/grub/grub.cfg
+# File generated by $programa $version
+#
+set timeout=15
+set default=0
+set lang=es
+insmod gettext
+
+if [ -e "/usr/share/grub/fonts/unifont.pf2" ]; then
+	loadfont /usr/share/grub/fonts/unifont.pf2
+	loadfont /usr/share/grub/fonts/10x20.pf2
+	insmod vbe
+	insmod gfxterm
+	set gfxmode="1280x800;1024x768;800x600;640x480"
+	terminal_output gfxterm
+	insmod png
+	background_image /boot/neonatox.png
+else 
+	echo "Loading $OS kernel linux-$(uname -r)"
+fi
+
+menuentry "$OS kernel linux-$(uname -r)" {
+	set root=(${grub_hdd})
+	linux /boot/vmlinuz-$(uname -r) root=/dev/${d1}
+}
+
+EOT
+
+ok_fail "Error creando nuevo GRUB2"	
+}
+
+#editar grub en la particion indicada.
+function editar_grub() 
+{
+	
+	no_grub_hdd="$1" #aqui la particion que se agrega a grub2
+	installedgrub="$2" #aqui esta instalado grub2
+	
+export DISTRO=/mnt/${installedgrub}
+export d1=${no_grub_hdd}
+convert_to_grub
+GRUB_CONF="${DISTRO}/boot/grub/grub.cfg"
+cat << EOF >> ${GRUB_CONF} 
+menuentry "$OS kernel linux-$(uname -r)" {
+	set root=(${grub_hdd})
+	linux /boot/vmlinuz-$(uname -r) root=/dev/${d1}
+}
+
+EOF
+
+ok_fail "Error editando GRUB2"
+}
+
+
+
+#Agregar particion  de windows a grub2.
+function windows_grub() 
+{
+	no_grub_hdd="$1" #aqui la particion que se agrega a grub2
+	installedgrub="$2" #aqui esta instalado grub2
+	
+export DISTRO=/mnt/${installedgrub}
+export d1=${no_grub_hdd}
+convert_to_grub
+GRUB_CONF="${DISTRO}/boot/grub/grub.cfg"
+cat << EOF >> ${GRUB_CONF} 
+menuentry "Sistema Operativo Microsoft Windows" {
+	set root=(${grub_hdd})
+	chainloader +1
+}
+
+EOF
+
+ok_fail "Error agregando Windows a GRUB2"
+}
+
+#set HOSTNAME
+function set_hostname() 
+{
+if [ "$1" = "" ]; then
+	echo ""
+	echo "Escriba un nombre de host"
+	echo ""
+	exit 1
+	fi
+	# set HOSTNAME
+	HOSTNAME=$1
+	echo "$HOSTNAME" > /etc/hostname
+	hostname -F /etc/hostname
+	# set /etc/hosts
+	echo "127.0.0.1 localhost $HOSTNAME" > /etc/hosts
+
+ok_fail "Error seteando HOSTNAME"	
+}
+
+#Dar formato a particion.
+function format_part_ext3() 
+{
+	if [ "$1" = "" ]; then
+	echo ""
+	echo "Escriba el nombre de una particion."
+	echo ""
+	exit 1
+	fi
+	part_format="$1"
+	umount /dev/$part_format
+	mkfs.ext3 -b 4096 /dev/$part_format
+	mkdir /mnt/$part_format
+	mount -t ext3 /dev/$part_format /mnt/$part_format	
+
+ok_fail "Error formateando particion con ext3"
+}
+
+#Dar formato a particion.
+function format_part_ext4() 
+{
+	if [ "$1" = "" ]; then
+	echo ""
+	echo "Escriba el nombre de una particion."
+	echo ""
+	exit 1
+	fi
+	part_format="$1"
+	umount /dev/$part_format
+	mkfs.ext4 -b 4096 /dev/$part_format
+	mkdir /mnt/$part_format
+	mount -t ext4 /dev/$part_format /mnt/$part_format	
+
+ok_fail "Error formateando particion con ext4"
+}
+
+#Uso de ayuda
+function usage() 
+{
+cat << EOF
+$red$programa $version para Linux $OS
+$red	* Necesitas introducir algún comando *
+$green	Para ver la ayuda: vegnux-installer --help
+
+EOF
+
+ok_fail "Error mostrando modo de uso"
+}
+
+#Resetea el sistema
+ function restart(){
+ echo "Desea resetear el sistema? (si/no)"
+ read reboot
+ case ${reboot} in
+ y|yes|Y|YES|si)
+ reboot
+ ;;
+ n|no|N|NO)
+ echo ""
+ ;;
+ esac
+
+}
+
+function newpart(){
+ 
+ cat << EOF
+$red$programa $version para Linux $OS
+	0: Launch cfdisk (text mode).
+	1: Launch parted (text mode).
+	2: Launch gparted (if X.org is running).
+
+	What do you want to run? (Type a number and press enter)
+	
+EOF
+
+ read part
+ case ${part} in
+	0)
+		echo "Launching cfdisk, please wait..."
+		cfdisk
+	;;
+	1)
+		echo "Launching parted, please wait..."
+		parted
+	;;
+	2)
+		echo "Launching gparted, please wait..."
+		gparted
+	;;
+ esac
+
+ok_fail "Error con programas de creacion de particion"
+}
+
+
+#Asistente de instalacion en consola
+function asistente_instalacion()
+{
+
+while [[ -z "${LOGIN}" ]]; do
+	echo -n "Introduzca el nombre del nuevo usuario: "
+	read LOGIN
+	#Chequear si usuario existe, numeros o simbolo raros.
+	if [[ $(grep "^${LOGIN}" "${passwd_file}" 2> /dev/null) ]]; then
+		echo "$red El nombre de usuario '${LOGIN}' ya existe. Introduzca otro nuevamente. $normal"
+		unset LOGIN				
+	elif [[ $(echo "${LOGIN}" | grep "^[0-9]" 2> /dev/null) ]]; then
+		echo "$red El nombre de usuario no puede tener numeros. Introduzca otro nuevamente. $normal"
+		unset LOGIN			
+	elif [[ $(echo "${LOGIN}" | grep "\." 2> /dev/null) ]]; then
+		echo "$red El nombre de usuario '${LOGIN}' tiene simbolos invalidos. Introduzca otro nuevamente. $normal"
+		unset LOGIN
+	fi
+done
+
+while [[ -z "${NEWPASS}" ]]; do
+	echo -n "Introduzca la contraseña del nuevo usuario: "
+	read NEWPASS
+done
+
+while [[ -z "${PASSROOT}" ]]; do
+	echo -n "Introduzca la contraseña del usuario ROOT: "
+	read PASSROOT
+done
+
+while [[ -z "${PARTINSTALL}" ]]; do
+	
+	findpart
+	sizeP=$(echo "scale=2;$espacio_libre/(1024*1024)" | bc)
+	echo "Escriba el nombre de la particion para instalar $OS"
+	echo "Recuerde que debe tener formato de linux ext3 o ext4."
+	echo "Y al menos $sizeP GB de espacio libre."
+	read PARTINSTALL
+	no_grub_hdd=$(grep "${PARTINSTALL}" "/proc/partitions")
+		if [ -z "${no_grub_hdd}" ]; then
+			echo "$red${PARTINSTALL} no existe en su sistema!! $normal"
+			unset PARTINSTALL		  
+		fi	
+done
+echo "Ha seleccionado la particion $green$PARTINSTALL$normal para instalar $OS"
+
+echo "Presione Enter para continuar con la instalacion"
+read
+( install_linux $PARTINSTALL | install_percent $PARTINSTALL )
+
+crear_fstab $PARTINSTALL
+
+
+
+ echo "Desea instalar GRUB2 en $PARTINSTALL? (si/no)"
+ read grub_install_asis
+ case ${grub_install_asis} in
+ y|yes|Y|YES|si)
+ PARTINSTALLGRUB=$PARTINSTALL
+ echo "GRUB2 se instalara en $green$PARTINSTALLGRUB$normal"
+ crear_nuevo_grub $PARTINSTALLGRUB
+ ;;
+ n|no|N|NO)
+ echo "Indique la particion que ya tiene GRUB2 instalado!!"
+ while [[ -z "${PARTINSTALLGRUB}" ]]; do
+		read PARTINSTALLGRUB
+		if [ -e "/mnt/$PARTINSTALLGRUB/boot/grub/grub.cfg" ]; then
+		continue
+		else 
+		echo "$redNo hay GRUB2 en esta particion o no existe. $normal"
+		unset PARTINSTALLGRUB
+		fi
+ done
+ echo "GRUB2 se instalara en $green$PARTINSTALLGRUB$normal"
+ editar_grub $PARTINSTALL $PARTINSTALLGRUB
+  ;;
+ esac
+
+ echo "Desea agregar una instalacion de Windows a GRUB2? (si/no)"
+ read grub_install_win
+ case ${grub_install_win} in
+ y|yes|Y|YES|si)
+ echo "Indique la particion que ya tiene Windows instalado!!"
+ read PARTINSTALLGRUBWIN
+ echo " Se agregara Windows a GRUB2 en $greenPARTINSTALLGRUBWIN$normal"
+ windows_grub $PARTINSTALLGRUBWIN $PARTINSTALLGRUB
+ ;;
+ n|no|N|NO)
+ echo ""
+ ;;
+ esac
+ 
+chroot /mnt/$PARTINSTALL/ addnewuser -b $LOGIN $NEWPASS
+
+chroot /mnt/$PARTINSTALL/ changepassroot $PASSROOT 
+
+post_install $PARTINSTALL
+
+echo "La instalacion a concluido exitosamente"
+
+restart
+
+ok_fail "Error en Asistente de Instalacion en modo Texto"
+}
+
+function install_linux_v()
+{
+	PARTINSTALL="$1"
+	( install_linux $PARTINSTALL | install_percent $PARTINSTALL | zenity --progress --percentage=0 --auto-close --auto-kill --title="Instalando $OS" --text="Copiando archivos...." --window-icon="$win_ico" --width=300 --height=100 ) 
+	if [[ "${?}" = "129" ]]; then
+		pkill cp	
+	else 
+		continue
+	fi
+}
+
+#Limpia variables temporales
+function clean()
+{
+unset COMANDO OPCION1 OPCION2 OPCION3 OPCION4 OPCION5 OPCION6 OPCION7 OPCION8
+}
+#==================================================#
+#===============Inicio de Programa=================#
+#
+#Check if running as root.
+if [[ "${UID}" != "0" ]]; then
+	echo "No eres usuario Root" 
+	exit 1
+fi
+
+#Carga archivo de configuracion.
+prefix="/opt"
+vegnux_installer_conf="${prefix}/vegnux-installer/vegnux-installer.conf"
+if [[ -e "${vegnux_installer_conf}" ]]; then
+	source "${vegnux_installer_conf}" 2> /dev/null
+else
+	ok_fail " * No existe ${vegnux_installer_conf} *"
+fi
+
+vegnux_installer_functions="${prefix}/vegnux-installer/vegnux-installer.functions"
+if [[ -e "${vegnux_installer_functions}" ]]; then
+	source "${vegnux_installer_functions}" 2> /dev/null
+else
+	ok_fail " * No existe ${vegnux_installer_functions} *"
+fi
+
+#Leer opciones de comando
+COMANDO="$1"
+OPCION1="$2"
+OPCION2="$3"
+OPCION3="$4"
+OPCION4="$5"
+OPCION5="$6"
+OPCION6="$7"
+OPCION7="$8"
+OPCION8="$9"
+
+case $COMANDO in
+--help)
+vegnux_ayuda_basica 			#Menu de ayuda basico.
+;;
+--help-a)
+vegnux_ayuda_avanzada 			#Menu de ayuda avanzado.
+;;
+--add-new-user)
+nuevo_usuario_basico $OPCION1 $OPCION2 	#Crea nuevo usuario basico.
+clean
+;;
+--pass-root) 
+set_pass_root $OPCION1 			#Setear nueva contrasena de root.
+clean
+;;
+--install-linux)
+install_linux $OPCION1 			#Copiado de archivos de instalacion.
+clean
+;;
+--install-linux-v)
+install_linux_v $OPCION1 	#Copiado de archivos de instalacion y progreso
+clean
+;;
+--create-fstab)
+crear_fstab $OPCION1						#crear la fstab.
+;;
+--post-install)
+post_install $OPCION1					#Realiza operaciones finales de instalacion.
+;;
+--find-part)
+detectar_particiones 			#Detectar particiones.
+;;
+--create-new-grub)
+crear_nuevo_grub $OPCION1   	#Crear nuevo grub en la particion indicada.
+clean
+;;
+--edit-grub)
+editar_grub $OPCION1 $OPCION2   #Editar grub en la particion indicada.
+clean
+;;
+--windows-grub)
+windows_grub $OPCION1 $OPCION2   #Agregar windows al grub en la particion indicada.
+clean
+;;
+--set-hostname)
+set_hostname $OPCION1			#Editar nombre de host.
+clean
+;;
+--format-part-ext3)
+format_part_ext3 $OPCION1 		#Formatea una particion con ext3.
+clean
+;;
+--format-part-ext4)
+format_part_ext4 $OPCION1 		#Formatea una particion con ext4.
+clean
+;;
+--restart)						#Resetear el sistema.
+restart							
+;;
+--new-part)				#Inicia un programa para crear particion.
+newpart							
+;;
+--assistant-install)		#Inicia un asistente de instalacion en modo texto.
+asistente_instalacion
+clean			
+;;
+-g)		#Inicia un asistente de instalacion en modo grafico.
+sh /opt/vegnux-installer/vegnux-installer-fe
+clean			
+;;
+--informacion-personal)
+informacion_personal $OPCION1 $OPCION2 $OPCION3	#Agrega informacion personal a una cuenta de usuario.
+clean
+;;
+--update-grub)
+actualizar_grub					#Actualiza configuracion de /boot/grub/grub.cfg
+clean
+;;
+--add-new-user-a)
+nuevo_usuario_avanzado $OPCION1 $OPCION2 $OPCION3 $OPCION4 $OPCION5 $OPCION6 $OPCION7 $OPCION8			#crear usuario avanzado
+;;
+*)
+usage							#Mensaje de ayuda.
+;;
+esac
+
+
+exit 0
+
+
+
+

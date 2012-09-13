@@ -1,0 +1,668 @@
+#! /bin/sh
+#
+#=========================================================#
+# /opt/vegnux-installer/vegnux-installer-fe
+# Instalador grafico para Vegnux NeonatoX OS
+# Proyecto Venezolano VegnuX <http://www.vegnux.org.ve>
+# Por:
+# Carlos Sánchez <mkl.vegnux@gmail.com>
+# Nehemias Velasquez <nehe009@gmail.com>
+# 2007 - 2012
+# GPLv3
+# This program comes with ABSOLUTELY NO WARRANTY.
+#=========================================================#
+#-----------------Funciones del Programa------------------#
+#=========================================================#
+
+#Revisa si hay un error en la salida estandar.
+function ok_fail() {
+	if [[ "${?}" != "0" ]]; then
+		echo "$red${1}$normal"
+		zenity --info --title "Warning" --text "${1}" 0 0
+		exit 1
+	fi
+}
+
+
+
+function check_login_uid() { # Chequea si el UID ya existe.
+if [[ $(grep -v "^$" "${passwd_file}" | awk -F':' '{print $3}' | grep "^${LOGIN_UID}$" 2>/dev/null) ]]; then
+	LOGIN_UID=$(expr "${LOGIN_UID}" + "1") 
+	check_login_uid
+fi
+
+}
+
+
+
+function crear_nuevo_usuario() {
+	OPC="$1"
+
+while [[ -z "${LOGIN}" ]]; do
+	LOGIN=`zenity --entry --title="$programa $version - Crear Nuevo Usuario" --text="Nombre de Usuario:" --entry-text="" --window-icon="$win_ico" --width=400 --height=150`
+	
+	if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+	LOGIN="0"
+	exit
+  	fi
+		
+	#Chequear si usuario existe, numeros o simbolo raros.
+	if [[ $(grep "^${LOGIN}" "${passwd_file}" 2> /dev/null) ]]; then
+		echo "$red El nombre de usuario '${LOGIN}' ya existe. Introduzca otro nuevamente. $normal"
+		zenity --info --title="Aviso" --text "El nombre de usuario ya existe.\n Introduzca otro nuevamente." --window-icon="$win_ico"
+		unset LOGIN				
+	elif [[ $(echo "${LOGIN}" | grep "^[0-9]" 2> /dev/null) ]]; then
+		echo "$red El nombre de usuario no puede tener numeros. Introduzca otro nuevamente. $normal"
+		zenity --info --title="Aviso" --text "El nombre de usuario no puede tener numeros.\n Introduzca otro nuevamente." --window-icon="$win_ico"
+		unset LOGIN			
+	elif [[ $(echo "${LOGIN}" | grep "\." 2> /dev/null) ]]; then
+		echo "$red El nombre de usuario '${LOGIN}' tiene simbolos invalidos. Introduzca otro nuevamente. $normal"
+		zenity --info --title="Aviso" --text "El nombre de usuario tiene simbolos invalidos.\n Introduzca otro nuevamente." --window-icon="$win_ico" 
+		unset LOGIN
+	fi
+done
+
+
+LOGIN_UID="${GROUP}"
+check_login_uid
+LOGIN_GROUP="${DEFAULT_GRUOP}"
+LOGIN_HOME="${DIR_HOME}/${LOGIN}"
+LOGIN_SHELL="${SHELL}"
+LOGIN_EXPIRE="${EXPIRE}"
+
+
+while [[ -z "${NEWPASS}" ]]; do
+	
+	while [[ -z "${NEWPASS1}" ]]; do
+		NEWPASS1=`zenity --entry --title="$programa $version - Crear Nuevo Usuario" --text="Escriba su Contraseña:" --entry-text="" --hide-text --window-icon="$win_ico" --width=400 --height=150`
+		if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		NEWPASS1="0"
+		exit
+		fi
+  	done
+  	
+  	while [[ -z "${NEWPASS2}" ]]; do
+		NEWPASS2=`zenity --entry --title="$programa $version - Crear Nuevo Usuario" --text="Repita su Contraseña:" --entry-text="" --hide-text --window-icon="$win_ico" --width=400 --height=150`
+		if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		NEWPASS2="0"
+		exit
+		fi
+  	done
+ 
+	if [ "$NEWPASS1" != "$NEWPASS2" ]; then
+		zenity --info --title="Aviso" --text "Las contraseñas no coinciden" --window-icon="$win_ico"
+		if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		exit
+		fi
+		unset NEWPASS1 NEWPASS2
+	else
+		NEWPASS=$NEWPASS1		
+	fi 	
+
+done
+
+
+while [[ -z "${FULL_NAME}" ]]; do
+	FULL_NAME=`zenity --entry --title="$programa $version - Crear Nuevo Usuario" --text="Informacion extra para nuevo Usuario.\n Nombre y Apellido:" --entry-text="" --window-icon="$win_ico" --width=400 --height=150`
+	if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+	FULL_NAME="0"
+	exit
+	fi	
+	if [ "${FULL_NAME}" = "" ]; then
+	FULL_NAME="Vegnux-Neonatox"
+	fi	
+done
+
+while [[ -z "${ROOM_NO}" ]]; do
+	ROOM_NO=`zenity --entry --title="$programa $version - Crear Nuevo Usuario" --text="Informacion extra para nuevo Usuario.\n Numero de Telefono:" --entry-text="" --window-icon="$win_ico" --width=400 --height=150`
+	if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+	ROOM_NO="0"
+	exit
+	fi
+	if [ "${ROOM_NO}" = "" ]; then
+	ROOM_NO="0000000000"
+	fi
+done
+
+
+case $OPC in #chequeo si llego a aqui o pido datos avanzados.
+basico)
+zenity --question --title="$programa $version - Crear Nuevo Usuario" \
+--text="
+  El Nuevo Usuario se creara con los siguientes Datos:
+ -------------------------------------------------------
+| Nombre de Usuario............: "${LOGIN}"
+| Usuario ID (UID)...........: "${LOGIN_UID}"
+| Grupo Inicial..............: "${LOGIN_GROUP}"
+| Directorio de Usuario............: "${LOGIN_HOME}"
+| Grupos Adicionales.........: "${ADITIONAL_GRUOPS}"
+| Shell de Usuario...........: "${LOGIN_SHELL}"
+ -------------------------------------------------------
+     Presiones Aceptar para Continuar
+     Presione Cancelar para Salir
+" --window-icon="$win_ico" --width=400 --height=100
+
+	if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		exit
+	fi
+;;
+avanzado)
+datos_usuario_avanzado
+zenity --question --title="$programa $version - Crear Nuevo Usuario" \
+--text="
+  El Nuevo Usuario se creara con los siguientes Datos:
+ -------------------------------------------------------
+| Nombre de Usuario............: "${LOGIN}"
+| Usuario ID (UID)...........: "${LOGIN_UID}"
+| Grupo Inicial..............: "${LOGIN_GROUP}"
+| Directorio de Usuario............: "${LOGIN_HOME}"
+| Grupos Adicionales.........: "${ADITIONAL_GRUOPS}"
+| Shell de Usuario...........: "${LOGIN_SHELL}"
+| Fecha de Expiracion........: "${LOGIN_EXPIRE}"
+ -------------------------------------------------------
+     Presiones Aceptar para Continuar
+     Presione Cancelar para Salir
+" --window-icon="$win_ico" --width=400 --height=100
+
+	if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		exit
+	fi
+
+;;
+esac
+
+}
+
+function datos_usuario_avanzado () {
+unset ADITIONAL_GRUOPS
+while [[ -z "${ADITIONAL_GRUOPS}" ]]; do
+
+	ADITIONAL_GRUOPS=`zenity --list --checklist --separator="," --print-column="2" --title="$programa $version" --window-icon="$win_ico" --text="\nSeleccione los grupos que agregara al nuevo usuario:\n" --column="" --column="" \
+	FALSE "bin" \
+	FALSE "daemon" \
+	FALSE "sys" \
+	FALSE "adm" \
+	FALSE "tty" \
+	TRUE "disk" \
+	FALSE "lp" \
+	FALSE "mem" \
+	FALSE "wheel" \
+	TRUE "floppy" \
+	FALSE "mail" \
+	FALSE "news" \
+	FALSE "uucp" \
+	FALSE "man" \
+	TRUE "audio" \
+	TRUE "video" \
+	TRUE "cdrom" \
+	FALSE "games" \
+	FALSE "slocate" \
+	FALSE "utmp" \
+	FALSE "smmsp" \
+	TRUE "tape" \
+	FALSE "mysql" \
+	FALSE "rpc" \
+	FALSE "sshd" \
+	FALSE "gdm" \
+	FALSE "shadow" \
+	FALSE "ftp" \
+	FALSE "messagebus" \
+	TRUE "haldaemon" \
+	FALSE "plugdev" \
+	FALSE "power" \
+	FALSE "pop" \
+	FALSE "scanner" \
+	FALSE "nobody" \
+	FALSE "users" \
+	FALSE "console" \
+	--width=300 --height=600`
+	
+	if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		ADITIONAL_GRUOPS="0"
+		exit
+	fi
+done
+
+unset LOGIN_HOME
+while [[ -z "${LOGIN_HOME}" ]]; do
+	LOGIN_HOME=`zenity --entry --title="$programa $version - Crear Nuevo Usuario" --text="Escriba la Ubicacion de su Carpeta de Usuario: \n Ej: /home/user" --entry-text="${DIR_HOME}/${LOGIN}" --window-icon="$win_ico" --width=400 --height=150`
+	if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		LOGIN_HOME="0"
+		exit
+	fi
+	
+	if [[ -d "${LOGIN_HOME}" ]]; then
+	zenity --info --title="Aviso" --text "Este directorio de usuario ya existe" --window-icon="$win_ico"
+	unset LOGIN_HOME
+	fi
+	
+done
+
+unset LOGIN_SHELL
+while [[ -z "${LOGIN_SHELL}" ]]; do
+	LOGIN_SHELL=`zenity --entry --title="$programa $version - Crear Nuevo Usuario" --text="Escriba la Ubicacion del Shell de Usuario:\n Ej: /bin/bash" --entry-text="${SHELL}" --window-icon="$win_ico" --width=400 --height=150`
+	if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		LOGIN_SHELL="0"
+		exit
+	fi	
+	if [[ ! -f "${LOGIN_SHELL}" ]]; then
+		zenity --info --title="Aviso" --text "No existe el SHELL! Escriba otro Nuevamente" --window-icon="$win_ico"
+		unset LOGIN_SHELL
+	elif [[ ! $(grep "^${LOGIN_SHELL}$" "${shells_file}" 2> /dev/null) ]]; then
+		zenity --info --title="Aviso" --text "SHELL no existe en /etc/shells \n Escriba otro Nuevamente." --window-icon="$win_ico"
+		unset LOGIN_SHELL
+	fi
+done
+
+unset LOGIN_EXPIRE
+while [[ -z "${LOGIN_EXPIRE}" ]]; do
+	USERDATE=`zenity --calendar --title="Seleccione una fecha" --text="Pulse sobre una fecha para seleccionar esa fecha."`
+	if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		LOGIN_EXPIRE="0"
+		exit
+	fi	
+	
+	dia="`echo $USERDATE | awk -F"/" '{print $1}'`"
+    mes="`echo $USERDATE | awk -F"/" '{print $2}'`"
+    ano="`echo $USERDATE | awk -F"/" '{print $3}'`"        
+    LOGIN_EXPIRE="$ano-$mes-$dia"
+		
+done
+
+}
+
+
+
+function set_pass_root() { #-----setear contrasena de root.
+
+
+while [[ -z "${NEWROOTPASS}" ]]; do
+	
+	while [[ -z "${NEWROOTPASS1}" ]]; do
+		NEWROOTPASS1=`zenity --entry --title="$programa $version - Contraseña de Root" --text="Contraseña de Root\nEscriba su Contraseña:" --entry-text="" --hide-text --window-icon="$win_ico" --width=400 --height=150`
+		if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		NEWROOTPASS1="0"
+		exit
+		fi
+  	done
+  	
+  	while [[ -z "${NEWROOTPASS2}" ]]; do
+		NEWROOTPASS2=`zenity --entry --title="$programa $version - Contraseña de Root" --text="Contraseña de Root\nRepita su Contraseña:" --entry-text="" --hide-text --window-icon="$win_ico" --width=400 --height=150`
+		if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		NEWROOTPASS2="0"
+		exit
+		fi
+  	done
+ 
+	if [ "$NEWROOTPASS1" != "$NEWROOTPASS2" ]; then
+		zenity --info --title="Aviso" --text "Las contraseñas no coinciden" --window-icon="$win_ico"
+		if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		exit
+		fi
+		unset NEWROOTPASS1 NEWROOTPASS2
+	else
+		NEWROOTPASS=$NEWROOTPASS1		
+	fi 	
+
+done
+
+}
+
+function seleccionar_particion(){
+	
+particiones="`cat $TMP/particiones`"
+tipo_part="`cat $TMP/tipo_part`"
+taman_part="`cat $TMP/taman_part`"
+
+NUM="0"
+for part in $particiones ; do
+export part$NUM=$part
+NUM=$(expr "${NUM}" + "1")
+done
+
+tipo_part0="`cat $TMP/tipo_part | awk -F"|" '{print $1}'`"
+tipo_part1="`cat $TMP/tipo_part | awk -F"|" '{print $2}'`"
+tipo_part2="`cat $TMP/tipo_part | awk -F"|" '{print $3}'`"
+tipo_part3="`cat $TMP/tipo_part | awk -F"|" '{print $4}'`"
+tipo_part4="`cat $TMP/tipo_part | awk -F"|" '{print $5}'`"
+tipo_part5="`cat $TMP/tipo_part | awk -F"|" '{print $6}'`"
+tipo_part6="`cat $TMP/tipo_part | awk -F"|" '{print $7}'`"
+tipo_part7="`cat $TMP/tipo_part | awk -F"|" '{print $8}'`"
+tipo_part8="`cat $TMP/tipo_part | awk -F"|" '{print $9}'`"
+tipo_part9="`cat $TMP/tipo_part | awk -F"|" '{print $10}'`"
+tipo_part10="`cat $TMP/tipo_part | awk -F"|" '{print $11}'`"
+tipo_part11="`cat $TMP/tipo_part | awk -F"|" '{print $12}'`"
+tipo_part12="`cat $TMP/tipo_part | awk -F"|" '{print $13}'`"
+tipo_part13="`cat $TMP/tipo_part | awk -F"|" '{print $14}'`"
+tipo_part14="`cat $TMP/tipo_part | awk -F"|" '{print $15}'`"
+tipo_part15="`cat $TMP/tipo_part | awk -F"|" '{print $16}'`"
+
+NUM="0"
+for part in $taman_part ; do
+export taman_part$NUM=$part
+NUM=$(expr "${NUM}" + "1")
+done
+
+
+while [[ -z "${partinst}" ]]; do
+
+partinst=`zenity --list --title="$programa $version" --window-icon="$win_ico" --text="\nSeleccione la particion para instalar $OS\n" --column="Particion" --column="Sistema de Archivos" --column="Tamaño" \
+"$part0" "$tipo_part0" "$taman_part0" \
+"$part1" "$tipo_part1" "$taman_part1" \
+"$part2" "$tipo_part2" "$taman_part2" \
+"$part3" "$tipo_part3" "$taman_part3" \
+"$part4" "$tipo_part4" "$taman_part4" \
+"$part5" "$tipo_part5" "$taman_part5" \
+"$part6" "$tipo_part6" "$taman_part6" \
+"$part7" "$tipo_part7" "$taman_part7" \
+"$part8" "$tipo_part8" "$taman_part8" \
+"$part9" "$tipo_part9" "$taman_part9" \
+"$part10" "$tipo_part10" "$taman_part10" \
+"$part11" "$tipo_part11" "$taman_part11" \
+"$part12" "$tipo_part12" "$taman_part12" \
+"$part13" "$tipo_part13" "$taman_part13" \
+"$part14" "$tipo_part14" "$taman_part14" \
+"$part15" "$tipo_part15" "$taman_part15" \
+--width=350 --height=400`	
+
+		if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		partinst="0"
+		exit
+		fi
+
+		#-------revisa que el formato de la particion sea de tipo 83..
+		tipo=`fdisk -l | grep $partinst | awk '{if ($2 == "*") {print $6};}{if ($2 != "*") {print $5};}'`
+		if [ "$tipo" != "$format_linux" ]; then
+			zenity --info --title="Aviso" --text "La particion no tiene el formato 'EXT3' requerido para $OS" --window-icon="$win_ico"
+			unset partinst
+		fi
+		
+		#---revisa si la particion tiene alguna instalacion linux...
+		if [ -e "/mnt/$partinst/etc/lsb-release" ]; then
+			source /mnt/$partinst/etc/lsb-release
+			distroinstalled="$DISTRIB_DESCRIPTION"
+			zenity --question --title="Aviso" --text="La Particion seleccionada ya tiene Instalado GNU/Linux $distroinstalled \n Presione Aceptar para Subtituirla o Cancelar para seleccionar otra particion. \n No se borraran los datos de usuario en /home y en /root" --window-icon="$win_ico" --width=400 --height=100
+			case $? in
+			0) # codigo para borrar instalacion existente menos datos de usuario.
+			echo "Funcion no implemetada"
+			continue
+			;;
+			1) #cancelar"
+			unset partinst
+			;;
+			-1) #atras
+			clear
+			exit 128
+			;;
+			esac
+		fi
+		
+		if [ "$partinst" = "" ]; then 
+			continue
+		else
+			#---chequea que exista suficiente espacio libre para la instalacion.
+			partinstsizefree=$(df /dev/$partinst | grep /dev/$partinst | awk -F " " '{print $4}')
+			sizeP=$(echo "scale=2;$espacio_libre/(1024*1024)" | bc)
+			if [ "$partinstsizefree" -lt "$espacio_libre" ]; then
+				zenity --info --title="Aviso" --text "Espacion insuficiente para esta instalacion, necesita minimo $sizeP GB libres." --window-icon="$win_ico"
+				unset partinst
+			fi
+		fi
+
+		zenity --question --title="Aviso" --text="Desea instalar $OS en la particion $partinst?" --window-icon="$win_ico" --width=400 --height=100
+		if [ "$?" = "1" ]; then 
+		unset partinst
+		fi	
+done
+
+}
+
+
+
+function install_grub2 () {
+while [[ -z "${DATA_GRUB}" ]]; do
+	
+#------menu para instalar grub2
+DATA_GRUB=`zenity --list --title="$programa $version" --window-icon="$win_ico" --text="Instalacion del Gestor de Arranque GRUB2" --column="" --column="" \
+1 "Instalar un nuevo GRUB2 en $partinst" \
+2 "No instalar GRUB2" \
+--width=300 --height=300`
+
+		if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		exit
+		fi
+
+
+case $DATA_GRUB in
+1) #-----funcion crear nuevo grub
+COMMAND_GRUB="vegnux-installer --create-new-grub $partinst"
+DATA_GRUB="0"
+;;
+2)
+zenity --info --title "Aviso" --window-icon="$win_ico" --text "No se instalara Gestor de Arranque GRUB2" 0 0
+COMMAND_GRUB="echo 'No se instalara Gestor de Arranque GRUB2'"
+DATA_GRUB="0"
+continue  #-----no instala grub
+;;
+esac
+
+done
+
+
+}
+
+
+function process_install_linux() {
+
+#--------------inicio de proceso de instalacion de linux--------#
+
+DATA_USER=`zenity --list --title="$programa $version" --window-icon="$win_ico" --text="\nSeleccione una Opcion Para Continuar?4\n" --column="" --column="" \
+1 "Usuario en Modo Basico" \
+2 "Usuario en Modo Avanzado" \
+--width=300 --height=300`
+case $DATA_USER in
+1)
+crear_nuevo_usuario basico  #-----llama a funcion de crear nuevo usuario.
+;;
+2)
+crear_nuevo_usuario avanzado #-----llama a funcion de crear nuevo usuario avanzado.
+;;
+*)
+
+break
+;;
+esac
+
+set_pass_root   #-----setear contrasena de root.
+
+findpart -r 2> /dev/null  #----- comando para detectar particiones del sistema.
+
+seleccionar_particion #----seleccion de particion 
+
+install_grub2  #------menu para instalar grub2
+
+zenity --question --title "Aviso" --window-icon="$win_ico" --text "Ya se han Obtenido todos los datos necesarios, Ahora comenzara el proceso de instalacion,
+Desea cancelar o continuar?" 0 0
+		if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		ok_fail "Ha cancelado el proceso de instalacion"
+		fi
+
+sh vegnux-installer --install-linux-v $partinst #----proceso de copiado de archivos + kernel
+ok_fail "Ha cancelado el proceso de instalacion o a ocurrido un error"
+
+vegnux-installer --create-fstab $partinst #creacion de nodos y fstab 
+ok_fail "Ha ocurrido un error creando nodos o creando fstab"
+
+$COMMAND_GRUB #ejecuta comando de instalar grub2
+ok_fail "Ha ocurrido un error instalando GRUB2"
+
+
+
+
+case $OPC in
+basico)
+chroot /mnt/$partinst/ addnewuser -b $LOGIN $NEWPASS  #crea nuevo usuario basico
+ok_fail "Ha ocurrido un error creando nuevo usuario basico"
+;;
+avanzado)
+chroot /mnt/$partinst/ addnewuser -b $LOGIN $NEWPASS $LOGIN_UID $LOGIN_GROUP $LOGIN_HOME $LOGIN_SHELL $LOGIN_EXPIRE $ADITIONAL_GRUOPS
+ok_fail "Ha ocurrido un error creando nuevo usuario avanzado"
+;;
+esac
+
+chroot /mnt/$partinst/ infouser -b $LOGIN $FULL_NAME $ROOM_NO
+ok_fail "Ha ocurrido un error agregando informacion personal al nuevo usuario"
+
+
+chroot /mnt/$partinst/ changepassroot $NEWROOTPASS #cambiia contraseña de root
+ok_fail "Ha ocurrido un error en proceso seteando pass de ROOT"
+
+vegnux-installer --post-install $partinst
+ok_fail "Ha ocurrido un error en proceso post-install"
+
+echo "sali user $LOGIN y pass $NEWPASS y  name $FULL_NAME y nume $ROOM_NO"
+echo $DATA_GRUP 
+echo $NEWROOTPASS
+echo $partinst
+echo $partinstsizefree
+
+echo "sali listo por grub2"
+echo $COMMAND_GRUB
+
+
+#-------------------------------------------------------------------------------------#
+zenity --info --title "Aviso" --window-icon="$win_ico" --text "La instalacion de $OS ha concluido exitosamente" 0 0
+
+zenity --question --title "Aviso" --window-icon="$win_ico" --text "Desea reiniciar el sistema Ahora?, 
+Es lo mas Recomendado" 0 0
+		if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		restart
+		fi
+
+exit 
+
+}
+
+#-----------------------------Menu Principal-----------------------------------#
+
+
+#Carga archivo de configuracion.
+prefix="/opt"
+vegnux_installer_conf="${prefix}/vegnux-installer/vegnux-installer.conf"
+if [[ -e "${vegnux_installer_conf}" ]]; then
+	source "${vegnux_installer_conf}" 2> /dev/null
+else
+	ok_fail " * No existe ${vegnux_installer_conf} *"
+fi
+
+vegnux_installer_functions="${prefix}/vegnux-installer/vegnux-installer.functions"
+if [[ -e "${vegnux_installer_functions}" ]]; then
+	source "${vegnux_installer_functions}" 2> /dev/null
+	continue
+else
+	ok_fail " * No existe ${vegnux_installer_functions} *"
+fi
+
+
+
+
+# Chequeo si esta logueado como ROOT
+if [[ "${UID}" != "0" ]]; then
+	zenity --info --title "Aviso" --text "Necesita permisos de ROOT" 0 0
+#clear
+	exit 128
+fi
+
+#---------------------------------Inicio de Programa---------------------------#
+zenity --info --title="$programa $version" --text "Esta herramienta a sido creada para instalar la LiveCd de $OS al disco duro.
+Atencion: Consultar la ayuda en caso de no saber el Correcto Uso. Gracias!" --window-icon="$win_ico"
+case $? in
+0)
+continue
+;;
+1)
+clear
+exit
+;;
+esac
+#------------------------------------------------------------------------------#
+
+while [ 0 ]; do
+
+	DATA=`zenity --list --title="$programa $version" --window-icon="$win_ico" --text="\nBienvenido a $programa.\nSeleccione una Opcion Para Continuar?\n" --column="" --column="" \
+	1 "Instalacion de $OS" \
+	2 "Requisitos" \
+	3 "Licencia" \
+	4 "Acerca de $programa" \
+	--width=300 --height=300`
+
+		if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		DATA="0"
+		exit
+		fi
+
+
+	if [ "$DATA" = "1" ]; then 
+
+	process_install_linux #funcion de proceso de instalacion
+
+
+	continue
+	fi
+
+	if [ "$DATA" = "2" ]; then #-----Requisitos
+	zenity --info --title="Requisitos" --text "
+	   Requisitos de $programa $version
+
+	PC/IBM:
+	- Particion con formato de linux ext3.
+	- 4GB o mas de espacio libre en la particion.
+	- 256MB o mas de memoria RAM.
+	- Procesador Intel o AMD de 800Mhz o mas.
+	- Un lector de CD-ROM o DVD-ROM.
+
+	Opcional:
+	- Tarjeta de Video con 128MB de VRAM.
+
+	Obligatorio:
+	- Leer la documentacion que acompaña al instalador.
+	- Seguir el procedimento descrito en la ayuda.
+
+	Gracias." --window-icon="$win_ico" 
+
+	continue
+	fi
+
+	if [ "$DATA" = "3" ]; then #---ver licencia
+	zenity --text-info --title="Licencia" --filename="$licencia_file" --window-icon="$win_ico" --width=500 --height=300
+
+	continue
+	fi
+
+	if [ "$DATA" = "4" ]; then #---Acerca
+	zenity --info --title="Acerca de $programa" --text "
+	Vegnux Installer $version
+
+	Vegnux Installer es el nuevo instalador en
+	modo grafico de consola para la Live CD de
+	Linux $OS, la cual forma parte
+	del Proyecto Venezolano VegnuX.
+
+	Por:
+	Carlos Sanchez mkl.vegnux@gmail.com
+	Nehemias Velasquez nehe009@gmail.com
+
+	Agradecimientos:
+	Jaime Gil de Sagredo 
+	jaimegildesagredo@gmail.com
+
+			Copyright (c) 2007 - 2010
+		   GNU GENERAL PUBLIC LICENSE
+			Version 3, 29 June 2007" --window-icon="$win_ico"
+	fi
+
+done
+
+
+
+

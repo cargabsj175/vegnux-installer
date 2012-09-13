@@ -1,0 +1,11 @@
+The VegnuX Project Installer for multiple distros.
+Copyleft 2007-2012  GPLv3
+Carlos Sanchez <cargabsj175@vegnux.org.ve>
+Nehemias Velazquez <nehe009@vegnux.org.ve>
+================
+
+Installing vegnux installer:
+./configure
+make install
+
+Enjoy ;)

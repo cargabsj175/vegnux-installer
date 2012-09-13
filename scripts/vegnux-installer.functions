@@ -1,0 +1,75 @@
+#=========================================================#
+# /opt/vegnux-installer/vegnux-installer.functions
+# Funciones Extras para Vegnux NeonatoX OS
+# Proyecto Venezolano VegnuX <http://www.vegnux.org.ve>
+# Por:
+# Carlos Sánchez <mkl.vegnux@gmail.com>
+# Nehemias Velasquez <nehe009@gmail.com>
+# 2007 - 2012
+# GPLv3
+# This program comes with ABSOLUTELY NO WARRANTY.
+#=========================================================#
+#-----------------Funciones Extras del Instalador---------#
+#=========================================================#
+
+KERNELVERSION="$(uname -r)"
+
+
+#Porcentaje de progreso de copia de archivos.
+function install_percent()
+{
+
+partinst="$1" #particion donde se esta instalando.
+espacio_total_install=$(echo "scale=0;$(du -c -s -0 /bin | awk -F " " '{print $1}')+$(du -c -s -l -0 /etc | awk -F " " '{print $1}')+$(du -c -s -l -0 /home | awk -F " " '{print $1}')+$(du -c -s -l -0 /lib | awk -F " " '{print $1}')+$(du -c -s -l -0 /root | awk -F " " '{print $1}')+$(du -c -s -l -0 /opt | awk -F " " '{print $1}')+$(du -c -s -l -0 /sbin | awk -F " " '{print $1}')+$(du -c -s -l -0 /usr | awk -F " " '{print $1}')+$(du -c -s -l -0 /var | awk -F " " '{print $1}')" | bc) 
+#espacio_usado=$(df /dev/$partinst | grep /dev/$partinst | awk -F " " '{print $3}')
+espacio_copiado="0"
+#echo $espacio_total_install
+#echo $espacio_usado
+PERCENT="0"
+espacio_usado="0"
+while [[ $espacio_copiado -lt $espacio_total_install ]]; do
+	espacio_usado_i=$(df /dev/$partinst | grep /dev/$partinst | awk -F " " '{print $3}')
+	espacio_copiado=$(echo "scale=0;$espacio_usado_i-$espacio_usado" | bc) 
+	PERCENT=$(( 100 * $espacio_copiado / $espacio_total_install ))
+	echo $PERCENT
+	echo "# Copiando archivos, $PERCENT% completado ...."	
+	sleep 2
+done
+
+	
+}
+
+
+
+find_modules_kernel_loaded ()
+{
+	aliases="$(cut -f 1 -d " " < /proc/modules)"
+    mods=""
+    for a in $aliases; do
+        modprobe --set-version ${KERNELVERSION} "$a"        
+        if [[ "${?}" != "0" ]]; then
+			continue
+		else
+			mods="$mods $a"					
+		fi        
+    done
+	AUTODETECT="$(echo $mods | sed -e 's/ata_generic//g' -e 's/ide_generic//g')"
+
+	NUM_MOD="0"	
+	echo "Modulos del kernel cargados para este sistema."	
+	for m in ${AUTODETECT}; do
+	NUM_MOD=$(expr "${NUM_MOD}" + "1")       
+	cat << EOF
+$NUM_MOD   ${m}
+EOF
+	done	
+	
+}
+
+
+
+
+
+
+
+
