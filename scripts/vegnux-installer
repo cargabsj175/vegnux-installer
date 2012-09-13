@@ -598,14 +598,14 @@ if [[ "${UID}" != "0" ]]; then
 fi
 
 #Carga archivo de configuracion.
-vegnux_installer_conf="./vegnux-installer.conf"
+vegnux_installer_conf="/usr/lib/vegnux-installer/vegnux-installer.conf"
 if [[ -e "${vegnux_installer_conf}" ]]; then
 	source "${vegnux_installer_conf}" 2> /dev/null
 else
 	ok_fail " * No existe ${vegnux_installer_conf} *"
 fi
 
-vegnux_installer_functions="./vegnux-installer.functions"
+vegnux_installer_functions="/usr/lib/vegnux-installer/vegnux-installer.functions"
 if [[ -e "${vegnux_installer_functions}" ]]; then
 	source "${vegnux_installer_functions}" 2> /dev/null
 else
