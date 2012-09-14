@@ -690,7 +690,7 @@ asistente_instalacion
 clean			
 ;;
 -g)		#Inicia un asistente de instalacion en modo grafico.
-sh ./vegnux-installer-fe
+sh /usr/lib/vegnux-installer/vegnux-installer-fe
 clean			
 ;;
 --informacion-personal)
