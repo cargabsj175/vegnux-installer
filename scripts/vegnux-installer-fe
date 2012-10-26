@@ -490,42 +490,49 @@ Desea cancelar o continuar?" 0 0
 sh vegnux-installer --install-linux-v $partinst #----proceso de copiado de archivos + kernel
 ok_fail "Ha cancelado el proceso de instalacion o a ocurrido un error"
 
+#barra de estado final
+(
+echo "10" ; echo "# Actualizando fstab" 
 vegnux-installer --create-fstab $partinst #creacion de nodos y fstab 
 ok_fail "Ha ocurrido un error creando nodos o creando fstab"
 
+echo "25" ; echo "# Instalando gestor de arranque GRUB2" 
 $COMMAND_GRUB #ejecuta comando de instalar grub2
 ok_fail "Ha ocurrido un error instalando GRUB2"
 
 
-
-
 case $OPC in
 basico)
+echo "40" ; echo "# Creando usuarios" 
 chroot /mnt/$partinst/ addnewuser -b $LOGIN $NEWPASS  #crea nuevo usuario basico
 ok_fail "Ha ocurrido un error creando nuevo usuario basico"
 ;;
 avanzado)
+echo "40" ; echo "# Creando usuarios" 
 chroot /mnt/$partinst/ addnewuser -b $LOGIN $NEWPASS $LOGIN_UID $LOGIN_GROUP $LOGIN_HOME $LOGIN_SHELL $LOGIN_EXPIRE $ADITIONAL_GRUOPS
 ok_fail "Ha ocurrido un error creando nuevo usuario avanzado"
 ;;
 esac
-
+echo "50" ; echo "# Editando informacion personal de nuevo usuario" 
 chroot /mnt/$partinst/ infouser -b $LOGIN $FULL_NAME $ROOM_NO
 ok_fail "Ha ocurrido un error agregando informacion personal al nuevo usuario"
 
-
+echo "70" ; echo "# Seteando contraseña de ROOT" 
 chroot /mnt/$partinst/ changepassroot $NEWROOTPASS #cambiia contraseña de root
 ok_fail "Ha ocurrido un error en proceso seteando pass de ROOT"
 
+echo "90" ; echo "# Aplicando ultimas configuraciones" 
 vegnux-installer --post-install $partinst
 ok_fail "Ha ocurrido un error en proceso post-install"
+
+echo "100" 
+)| zenity --progress --title="Terminando la Instalacion" --text="" --percentage=0 --auto-close --auto-kill --window-icon="$win_ico" --width=300 --height=100
 
 echo "sali user $LOGIN y pass $NEWPASS y  name $FULL_NAME y nume $ROOM_NO"
 echo $DATA_GRUP 
 echo $NEWROOTPASS
 echo $partinst
 echo $partinstsizefree
-
 echo "sali listo por grub2"
 echo $COMMAND_GRUB
 
@@ -535,7 +542,7 @@ zenity --info --title "Aviso" --window-icon="$win_ico" --text "La instalacion de
 
 zenity --question --title "Aviso" --window-icon="$win_ico" --text "Desea reiniciar el sistema Ahora?, 
 Es lo mas Recomendado" 0 0
-		if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+		if [ "$?" = "0" ]; then #chequea si aprete cerrar o cancelar o ESC
 		restart
 		fi
 
