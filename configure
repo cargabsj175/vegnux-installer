@@ -41,6 +41,7 @@ create-dirs:
 all : create-dirs
 	install -m ${MODE} scripts/* ${LIBDIR}/${PACKAGE_NAME}
 	install -m ${MODE} data/* ${LIBDIR}/${PACKAGE_NAME}
+	install -g 0 -o 0 -m 0644 man/vegnux-installer.8 ${DESTDIR}/man/man8
 	install -m ${MODE} AUTHORS ${DESTDIR}/share/doc/${PACKAGE_NAME}
 	install -m ${MODE} COPYING ${DESTDIR}/share/doc/${PACKAGE_NAME}
 	install -m ${MODE} NEWS ${DESTDIR}/share/doc/${PACKAGE_NAME}
@@ -54,6 +55,7 @@ install : all
 uninstall:
 	rm -rf ${DESTDIR}/share/doc/${PACKAGE_NAME}
 	rm -rf ${LIBDIR}/${PACKAGE_NAME}
+	rm -rf ${DESTDIR}/man/man8/vegnux-installer.8
 	rm -rf /usr/share/applications/vegnux-installer.desktop
 	rm -rf /usr/share/pixmaps/vegnux-installer.png
 	rm -rf /usr/bin/vegnux-installer

@@ -1,0 +1,39 @@
+.\" Manpage para vegnux-installer.
+.\" Contact mkl.vegnux@gmail.com para corregir errores.
+.TH man 8 "05 Nov 2012" "06.1" "vegnux-installer man page"
+.SH NOMBRE
+vegnux-installer \- Instala cualquier sistema operativo en el disco duro.
+.SH RESUMEN
+vegnux-installer [OPCION 1] [OPCION 2] [OPCION 3]
+.SH DESCRIPCION
+vegnux-installer es un programa para instalar cualquier Sistema Operativo (Teóricamente) en el disco duro desde un medio extraible.
+.SH OPCIONES
+.SH Basicas:
+ --add-new-user  Crear nuevo usuario con opciones por defecto.
+ --pass-root  Cambiar contraseña de ROOT
+ --find-part  Muestra las particiones del sistema.
+ --set-hostname   Modifica el HOSTNAME del Sistema.
+ --info-personal   Añade informacion personal a un usuario.
+ --assistant-install  Inicia asistente de instalacion en modo texto.
+ --update-grub   Actualiza automaticamente /boot/grub/grub.cfg
+
+.SH Avanzadas:
+ --format-part-ext3  Da formato ext3 de linux a la particion indicada.
+ --format-part-ext4  Da formato ext4 de linux a la particion indicada.
+ --install-linux  Instala linux en la particion indicada.
+ --create-new-grub  Instala GRUB2 en la particion indicada.
+ --edit-grub  Añade instalacion a GRUB existente.
+ --windows-grub  Añade una particion con Microsoft Windows a GRUB2.
+ --create-fstab  Crea el archivo /etc/fstab para la nueva instalacion.
+ --new-part   Da opcion para iniciar programas de particion.
+ --post-install  Realiza operaciones de post instalacion.
+ 
+.SH Otras:
+ -g Inicia asistente de instalacion en modo grafico.
+   
+.SH BUGS
+No hay bugs conocidos.
+.SH AUTORES
+Carlos Sánchez (cargabsj175@gmail.com),
+.\" 
+Nehemias Velázquez (nehe009@gmail.com)

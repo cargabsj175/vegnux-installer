@@ -1,13 +1,15 @@
-
 [Desktop Entry]
 Version=0.6.1
 Encoding=UTF-8
 Type=Application
-Name=Instalar NeonatoX (Modo Grafico)
+Name=Instalar NeonatoX (Modo Gráfico)
+Name[en]=Install NeonatoX (GUI)
 Comment=Instala NeonatoX en su disco duro
+Comment[en]=Installs NeonatoX on your hard drive
 Categories=Application;System;
 Exec=vegnux-installer -g
 Icon=vegnux-installer
 Terminal=false
 StartupNotify=true
-GenericName=
+GenericName=Instalador
+GenericName[en]=Installer
