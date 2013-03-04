@@ -205,8 +205,12 @@ function install_linux()
 	mount -t ext3 /dev/${no_grub_hdd} ${LFS}
 	mkdir -p ${LFS}/{tmp,boot,mnt,dev,sys,proc,srv,media}
 	chmod 777 ${LFS}/tmp
+	rm -r ${LFS}/var/empty
+	mkdir ${LFS}/var/empty
+	chmod 755 ${LFS}/var/empty
+	chown root ${LFS}/var/empty
 	mkdir -p ${LFS}/media/{floppy,cdrom}
-	mkdir -p ${LFS}/{bin,etc,home,lib,root,sbin,usr,var}
+	mkdir -p ${LFS}/{bin,etc,home,lib,root,sbin,usr,var,run}
 	mnts=$(dir /mnt)
 	
 		for mntpnt in ${mnts}
@@ -250,16 +254,23 @@ function post_install()
 {
 	no_grub_hdd="$1"
 	export LFS=/mnt/${no_grub_hdd}
-	
-#disable automatic login (neonatox livecd user)
-#sed -i "s|AutomaticLogin=neonatox||g" ${LFS}/usr/etc/gdm/custom.conf #deprecated
-#sed -i "s|AutomaticLoginEnable=true||g" ${LFS}/usr/etc/gdm/custom.conf #deprecated
 
 #------------------Borrar enlaces del instalador-----------#
 rm -f ${LFS}/usr/share/applications/install.desktop
 rm -f ${LFS}/root/Desktop/install.desktop
 #----------------------------------------------------------#
 
+#------------------ Limpiar el directorio /root ------------------ #
+rm -r ${LFS}/root/*
+#----------------------------------------------------------#
+
+#------------------ Reemplazar el fichero /etc/lxdm/lxdm.conf ------------------#
+if [[ -f /usr/lib/vegnux-installer/templates/lxdm.conf ]]; then
+cp /usr/lib/vegnux-installer/templates/lxdm.conf /etc/lxdm/lxdm.conf
+else
+continue
+fi
+#----------------------------------------------------------#
 ok_fail "Error  ejecutando operaciones de Post Instalacion"
 }
 
