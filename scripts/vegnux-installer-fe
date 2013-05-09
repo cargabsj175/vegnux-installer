@@ -7,7 +7,7 @@
 # Por:
 # Carlos Sánchez <mkl.vegnux@gmail.com>
 # Nehemias Velasquez <nehe009@gmail.com>
-# 2007 - 2012
+# 2007 - 2013
 # GPLv3
 # This program comes with ABSOLUTELY NO WARRANTY.
 #=========================================================#
@@ -113,16 +113,17 @@ while [[ -z "${FULL_NAME}" ]]; do
 	fi	
 done
 
-while [[ -z "${ROOM_NO}" ]]; do
-	ROOM_NO=`zenity --entry --title="$programa $version - Crear Nuevo Usuario" --text="Informacion extra para nuevo Usuario.\n Numero de Telefono:" --entry-text="" --window-icon="$win_ico" --width=400 --height=150`
-	if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
-	ROOM_NO="0"
-	exit
-	fi
-	if [ "${ROOM_NO}" = "" ]; then
-	ROOM_NO="0000000000"
-	fi
-done
+# no admisible en algunos paises por lo tanto se omite
+#while [[ -z "${ROOM_NO}" ]]; do
+	#ROOM_NO=`zenity --entry --title="$programa $version - Crear Nuevo Usuario" --text="Informacion extra para nuevo Usuario.\n Numero de Telefono:" --entry-text="" --window-icon="$win_ico" --width=400 --height=150`
+	#if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+	#ROOM_NO="0"
+	#exit
+	#fi
+	#if [ "${ROOM_NO}" = "" ]; then
+	#ROOM_NO="0000000000"
+	#fi
+#done
 
 
 case $OPC in #chequeo si llego a aqui o pido datos avanzados.
@@ -180,11 +181,11 @@ while [[ -z "${ADITIONAL_GRUOPS}" ]]; do
 	ADITIONAL_GRUOPS=`zenity --list --checklist --separator="," --print-column="2" --title="$programa $version" --window-icon="$win_ico" --text="\nSeleccione los grupos que agregara al nuevo usuario:\n" --column="" --column="" \
 	FALSE "bin" \
 	FALSE "daemon" \
-	FALSE "sys" \
+	TRUE "sys" \
 	FALSE "adm" \
 	FALSE "tty" \
 	TRUE "disk" \
-	FALSE "lp" \
+	TRUE "lp" \
 	FALSE "mem" \
 	FALSE "wheel" \
 	TRUE "floppy" \
@@ -194,12 +195,12 @@ while [[ -z "${ADITIONAL_GRUOPS}" ]]; do
 	FALSE "man" \
 	TRUE "audio" \
 	TRUE "video" \
-	TRUE "cdrom" \
+	TRUE "optical" \
 	FALSE "games" \
-	FALSE "slocate" \
+	TRUE "locate" \
 	FALSE "utmp" \
 	FALSE "smmsp" \
-	TRUE "tape" \
+	TRUE "uucp" \
 	FALSE "mysql" \
 	FALSE "rpc" \
 	FALSE "sshd" \
@@ -623,10 +624,10 @@ while [ 0 ]; do
 
 	PC/IBM:
 	- Particion con formato de linux ext3.
-	- 4GB o mas de espacio libre en la particion.
-	- 256MB o mas de memoria RAM.
+	- 5GB o mas de espacio libre en la particion.
+	- 512MB o mas de memoria RAM.
 	- Procesador Intel o AMD de 800Mhz o mas.
-	- Un lector de CD-ROM o DVD-ROM.
+	- Un lector de CD-ROM, DVD-ROM o BD-ROM.
 
 	Opcional:
 	- Tarjeta de Video con 128MB de VRAM.
@@ -651,12 +652,12 @@ while [ 0 ]; do
 	Vegnux Installer $version
 
 	Vegnux Installer es el nuevo instalador en
-	modo grafico de consola para la Live CD de
+	modo grafico de consola para la Live Kit de
 	Linux $OS, la cual forma parte
 	del Proyecto Venezolano VegnuX.
 
 	Por:
-	Carlos Sanchez mkl.vegnux@gmail.com
+	Carlos Sanchez cargabsj175@gmail.com
 	Nehemias Velasquez nehe009@gmail.com
 
 	Agradecimientos:
