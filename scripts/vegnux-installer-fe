@@ -48,16 +48,16 @@ while [[ -z "${LOGIN}" ]]; do
 		
 	#Chequear si usuario existe, numeros o simbolo raros.
 	if [[ $(grep "^${LOGIN}" "${passwd_file}" 2> /dev/null) ]]; then
-		echo "$red El nombre de usuario '${LOGIN}' ya existe. Introduzca otro nuevamente. $normal"
-		zenity --info --title="Aviso" --text "El nombre de usuario ya existe.\n Introduzca otro nuevamente." --window-icon="$win_ico"
+		echo "$red El nombre de usuario '${LOGIN}' ya existe. Introduzca otro de nuevo. $normal"
+		zenity --info --title="Aviso" --text "El nombre de usuario ya existe.\n Introduzca otro de nuevo." --window-icon="$win_ico"
 		unset LOGIN				
 	elif [[ $(echo "${LOGIN}" | grep "^[0-9]" 2> /dev/null) ]]; then
-		echo "$red El nombre de usuario no puede tener numeros. Introduzca otro nuevamente. $normal"
-		zenity --info --title="Aviso" --text "El nombre de usuario no puede tener numeros.\n Introduzca otro nuevamente." --window-icon="$win_ico"
+		echo "$red El nombre de usuario no puede tener numeros. Introduzca otro de nuevo. $normal"
+		zenity --info --title="Aviso" --text "El nombre de usuario no puede tener numeros.\n Introduzca otro de nuevo." --window-icon="$win_ico"
 		unset LOGIN			
 	elif [[ $(echo "${LOGIN}" | grep "\." 2> /dev/null) ]]; then
-		echo "$red El nombre de usuario '${LOGIN}' tiene simbolos invalidos. Introduzca otro nuevamente. $normal"
-		zenity --info --title="Aviso" --text "El nombre de usuario tiene simbolos invalidos.\n Introduzca otro nuevamente." --window-icon="$win_ico" 
+		echo "$red El nombre de usuario '${LOGIN}' tiene simbolos invalidos. Introduzca otro de nuevo. $normal"
+		zenity --info --title="Aviso" --text "El nombre de usuario tiene simbolos invalidos.\n Introduzca otro de nuevo." --window-icon="$win_ico" 
 		unset LOGIN
 	fi
 done
@@ -125,7 +125,6 @@ done
 	#fi
 #done
 
-
 case $OPC in #chequeo si llego a aqui o pido datos avanzados.
 basico)
 zenity --question --title="$programa $version - Crear Nuevo Usuario" \
@@ -136,7 +135,7 @@ zenity --question --title="$programa $version - Crear Nuevo Usuario" \
 | Usuario ID (UID)...........: "${LOGIN_UID}"
 | Grupo Inicial..............: "${LOGIN_GROUP}"
 | Directorio de Usuario............: "${LOGIN_HOME}"
-| Grupos Adicionales.........: "${ADITIONAL_GRUOPS}"
+| Grupos Adicionales.........: "${ADITIONAL_GROUPS}"
 | Shell de Usuario...........: "${LOGIN_SHELL}"
  -------------------------------------------------------
      Presiones Aceptar para Continuar
@@ -157,7 +156,7 @@ zenity --question --title="$programa $version - Crear Nuevo Usuario" \
 | Usuario ID (UID)...........: "${LOGIN_UID}"
 | Grupo Inicial..............: "${LOGIN_GROUP}"
 | Directorio de Usuario............: "${LOGIN_HOME}"
-| Grupos Adicionales.........: "${ADITIONAL_GRUOPS}"
+| Grupos Adicionales.........: "${ADITIONAL_GROUPS}"
 | Shell de Usuario...........: "${LOGIN_SHELL}"
 | Fecha de Expiracion........: "${LOGIN_EXPIRE}"
  -------------------------------------------------------
@@ -175,10 +174,10 @@ esac
 }
 
 function datos_usuario_avanzado () {
-unset ADITIONAL_GRUOPS
-while [[ -z "${ADITIONAL_GRUOPS}" ]]; do
+unset ADITIONAL_GROUPS
+while [[ -z "${ADITIONAL_GROUPS}" ]]; do
 
-	ADITIONAL_GRUOPS=`zenity --list --checklist --separator="," --print-column="2" --title="$programa $version" --window-icon="$win_ico" --text="\nSeleccione los grupos que agregara al nuevo usuario:\n" --column="" --column="" \
+	ADITIONAL_GROUPS=`zenity --list --checklist --separator="," --print-column="2" --title="$programa $version" --window-icon="$win_ico" --text="\nSeleccione los grupos que agregara al nuevo usuario:\n" --column="" --column="" \
 	FALSE "bin" \
 	FALSE "daemon" \
 	TRUE "sys" \
@@ -219,7 +218,7 @@ while [[ -z "${ADITIONAL_GRUOPS}" ]]; do
 	--width=300 --height=600`
 	
 	if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
-		ADITIONAL_GRUOPS="0"
+		ADITIONAL_GROUPS="0"
 		exit
 	fi
 done
@@ -250,7 +249,7 @@ while [[ -z "${LOGIN_SHELL}" ]]; do
 		zenity --info --title="Aviso" --text "No existe el SHELL! Escriba otro Nuevamente" --window-icon="$win_ico"
 		unset LOGIN_SHELL
 	elif [[ ! $(grep "^${LOGIN_SHELL}$" "${shells_file}" 2> /dev/null) ]]; then
-		zenity --info --title="Aviso" --text "SHELL no existe en /etc/shells \n Escriba otro Nuevamente." --window-icon="$win_ico"
+		zenity --info --title="Aviso" --text "SHELL no existe en /etc/shells \n Escriba otro de nuevo." --window-icon="$win_ico"
 		unset LOGIN_SHELL
 	fi
 done
@@ -307,6 +306,24 @@ while [[ -z "${NEWROOTPASS}" ]]; do
 
 done
 
+}
+
+function config_hostname(){
+	while [[ -z "${_HOSTNAME}" ]]; do
+	_HOSTNAME=$(zenity --entry --title="$programa $version - Establecer el nombre del equipo" --text="Nombre del equipo (hostname)" --entry-text="" --window-icon="$win_ico" --width=400 --height=150)
+	if [ "$?" = "1" ]; then #chequea si aprete cerrar o cancelar o ESC
+	_HOSTNAME="0"
+	exit
+  	fi
+  	
+  	# Chequea que no haya espacios en blanco y/o simbolos raros
+	_HOSTNAME=$(echo $_HOSTNAME | sed 's:\ :_:g') # reemplaza automaticamente espacios en blanco con "_" si se consiguen
+	if [[ $(echo "${_HOSTNAME}" | grep "\." 2> /dev/null) ]]; then
+		echo "$red El nombre del equipo '${_HOSTNAME}' tiene simbolos invalidos. Introduzca otro de nuevo. $normal"
+		zenity --info --title="Aviso" --text "El nombre de usuario tiene simbolos invalidos.\n Introduzca otro de nuevo." --window-icon="$win_ico" 
+		unset _HOSTNAME
+	fi
+	done
 }
 
 function seleccionar_particion(){
@@ -461,6 +478,11 @@ DATA_USER=`zenity --list --title="$programa $version" --window-icon="$win_ico" -
 1 "Usuario en Modo Basico" \
 2 "Usuario en Modo Avanzado" \
 --width=300 --height=300`
+
+set_time_zone # ----- establece la zona horaria
+
+config_hostname # ----- establece el nombre del equipo
+
 case $DATA_USER in
 1)
 crear_nuevo_usuario basico  #-----llama a funcion de crear nuevo usuario.
@@ -473,14 +495,13 @@ crear_nuevo_usuario avanzado #-----llama a funcion de crear nuevo usuario avanza
 break
 ;;
 esac
-
 set_pass_root   #-----setear contrasena de root.
 
 findpart -r 2> /dev/null  #----- comando para detectar particiones del sistema.
 
 seleccionar_particion #----seleccion de particion 
 
-install_grub2  #------menu para instalar grub2
+install_grub2  #------menu para instalar o no el grub2
 
 zenity --question --title "Aviso" --window-icon="$win_ico" --text "Ya se han Obtenido todos los datos necesarios, Ahora comenzara el proceso de instalacion,
 Desea cancelar o continuar?" 0 0
@@ -501,6 +522,13 @@ echo "25" ; echo "# Instalando gestor de arranque GRUB2"
 $COMMAND_GRUB #ejecuta comando de instalar grub2
 ok_fail "Ha ocurrido un error instalando GRUB2"
 
+echo "30" ; echo "# estableciendo la zona horaria"
+chroot /mnt/$partinst/ tzconfig -b $TZCONFIG #establece la zona horaria
+ok_fail "Ha ocurrido un error estableciendo la zona horaria."
+
+echo "35" ; echo "# estableciendo el nombre del equipo"
+chroot /mnt/$partinst/ vegnux-installer --set-hostname $_HOSTNAME # establece el nombre que tendra el equipo
+ok_fail "Ha ocurrido un error estableciendo el nombre del equipo."
 
 case $OPC in
 basico)
@@ -510,7 +538,7 @@ ok_fail "Ha ocurrido un error creando nuevo usuario basico"
 ;;
 avanzado)
 echo "40" ; echo "# Creando usuarios" 
-chroot /mnt/$partinst/ addnewuser -b $LOGIN $NEWPASS $LOGIN_UID $LOGIN_GROUP $LOGIN_HOME $LOGIN_SHELL $LOGIN_EXPIRE $ADITIONAL_GRUOPS
+chroot /mnt/$partinst/ addnewuser -b $LOGIN $NEWPASS $LOGIN_UID $LOGIN_GROUP $LOGIN_HOME $LOGIN_SHELL $LOGIN_EXPIRE $ADITIONAL_GROUPS
 ok_fail "Ha ocurrido un error creando nuevo usuario avanzado"
 ;;
 esac
@@ -562,13 +590,18 @@ if [[ -e "${vegnux_installer_conf}" ]]; then
 else
 	ok_fail " * No existe ${vegnux_installer_conf} *"
 fi
-
 vegnux_installer_functions="/usr/lib/vegnux-installer/vegnux-installer.functions"
 if [[ -e "${vegnux_installer_functions}" ]]; then
 	source "${vegnux_installer_functions}" 2> /dev/null
 	continue
 else
 	ok_fail " * No existe ${vegnux_installer_functions} *"
+fi
+tzconfig_functions="/usr/lib/libneonatox/tzconfig"
+if [[ -e "${tzconfig_functions}" ]]; then
+	source "${tzconfig_functions}" 2> /dev/null
+else
+	ok_fail " * No existe ${tzconfig_functions} *"
 fi
 
 
@@ -609,11 +642,9 @@ while [ 0 ]; do
 		exit
 		fi
 
-
 	if [ "$DATA" = "1" ]; then 
 
 	process_install_linux #funcion de proceso de instalacion
-
 
 	continue
 	fi
