@@ -404,6 +404,8 @@ if [ "$1" = "" ]; then
 	HOSTNAME=$1
 	echo "$HOSTNAME" > /etc/hostname
 	hostname -F /etc/hostname
+	# set /etc/sysconfig/network
+	echo "HOSTNAME=$HOSTNAME" > /etc/sysconfig/network
 	# set /etc/hosts
 	echo "127.0.0.1 localhost $HOSTNAME" > /etc/hosts
 
