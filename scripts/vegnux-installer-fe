@@ -479,10 +479,6 @@ DATA_USER=`zenity --list --title="$programa $version" --window-icon="$win_ico" -
 2 "Usuario en Modo Avanzado" \
 --width=300 --height=300`
 
-set_time_zone # ----- establece la zona horaria
-
-config_hostname # ----- establece el nombre del equipo
-
 case $DATA_USER in
 1)
 crear_nuevo_usuario basico  #-----llama a funcion de crear nuevo usuario.
@@ -495,6 +491,15 @@ crear_nuevo_usuario avanzado #-----llama a funcion de crear nuevo usuario avanza
 break
 ;;
 esac
+
+set_language  # ----- establece el lenguaje de la instalación
+
+set_language_xkb # ----- establece el lenguaje del teclado de la instalación
+
+set_time_zone # ----- establece la zona horaria
+
+config_hostname # ----- establece el nombre del equipo
+
 set_pass_root   #-----setear contrasena de root.
 
 findpart -r 2> /dev/null  #----- comando para detectar particiones del sistema.
@@ -522,7 +527,15 @@ echo "25" ; echo "# Instalando gestor de arranque GRUB2"
 $COMMAND_GRUB #ejecuta comando de instalar grub2
 ok_fail "Ha ocurrido un error instalando GRUB2"
 
-echo "30" ; echo "# estableciendo la zona horaria"
+echo "27" ; echo "# estableciendo el idioma"
+chroot /mnt/$partinst/ setlang -b $SETLANGUAGE # establece el idioma
+ok_fail "Ha ocurrido un error estableciendo el idioma"
+
+echo "30" ; echo "# estableciendo el teclado de la instalación"
+chroot /mnt/$partinst/ setlang -n $SETXKEYBOARD # establece el teclado
+ok_fail "Ha ocurrido un error estableciendo el teclado"
+
+echo "32" ; echo "# estableciendo la zona horaria"
 chroot /mnt/$partinst/ tzconfig -b $TZCONFIG #establece la zona horaria
 ok_fail "Ha ocurrido un error estableciendo la zona horaria."
 
@@ -604,6 +617,12 @@ else
 	ok_fail " * No existe ${tzconfig_functions} *"
 fi
 
+setlang_functions="/usr/lib/libneonatox/setlang"
+if [[ -e "${setlang_functions}" ]]; then
+	source "${setlang_functions}" 2> /dev/null
+else
+	ok_fail " * No existe ${tzconfig_functions} *"
+fi
 
 
 
